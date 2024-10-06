@@ -1,0 +1,3 @@
+([('Calcula_Pontos',
+   '/Users/charlesblagitz/Desktop/dist/Calcula_Pontos',
+   'EXECUTABLE')],)

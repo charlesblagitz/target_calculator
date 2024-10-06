@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Calculator App</title>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+			background-color: #f4f4f4;
+			text-align: center;
+			padding: 20px;
+		}
+
+		.container {
+			border: 2px solid #333;
+			padding: 20px;
+			width: 400px;
+			margin: 0 auto;
+			background-color: #fff;
+			border-radius: 10px;
+		}
+
+		#total {
+			font-size: 28px;
+			margin-bottom: 20px;
+			padding: 10px;
+			border: 2px solid #333;
+			display: inline-block;
+			width: 300px;
+			text-align: center;
+			background-color: #fff;
+		}
+
+		#pressed-boxes {
+			display: grid;
+			grid-template-columns: repeat(5, 50px); /* 5 columns for 10 boxes (2 rows) */
+			gap: 10px;
+			justify-content: center;
+			margin-bottom: 20px;
+		}
+
+		.box {
+			width: 50px;
+			height: 50px;
+			border: 2px solid #000;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 18px;
+			background-color: #fff;
+			color: #000;
+		}
+
+		.grid-container {
+			display: grid;
+			grid-template-columns: repeat(3, 100px); /* 3 columns, each 100px wide */
+			grid-auto-rows: 100px; /* Rows are 100px tall */
+			gap: 10px;
+			justify-content: center;
+			margin-bottom: 20px;
+		}
+
+		/* Button styles based on value */
+		.btn-m, .btn-1, .btn-2 {
+			background-color: white;
+			color: black;
+			border: 2px solid #000;
+		}
+
+		.btn-3, .btn-4 {
+			background-color: black;
+			color: white;
+		}
+
+		.btn-5, .btn-6 {
+			background-color: blue;
+			color: white;
+		}
+
+		.btn-7, .btn-8 {
+			background-color: red;
+			color: white;
+		}
+
+		.btn-9, .btn-10, .btn-x {
+			background-color: yellow;
+			color: black;
+		}
+
+		button {
+			width: 100px;
+			height: 100px;
+			font-size: 18px;
+			border: none;
+			border-radius: 5px;
+			cursor: pointer;
+		}
+
+		button:hover {
+			opacity: 0.8;
+		}
+
+		button:active {
+			opacity: 0.6;
+		}
+
+		#reset-button {
+			background-color: #dc3545;
+			color: white;
+		}
+
+		#reset-button:hover {
+			background-color: #c82333;
+		}
+
+		.radio-container {
+			margin-bottom: 20px;
+		}
+
+		.radio-container label {
+			font-size: 18px;
+			margin-right: 10px;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div id="total">{{ total }}</div>
+
+		<!-- 10 empty boxes to display pressed buttons -->
+		<div id="pressed-boxes">
+			<div class="box" id="box-0"></div>
+			<div class="box" id="box-1"></div>
+			<div class="box" id="box-2"></div>
+			<div class="box" id="box-3"></div>
+			<div class="box" id="box-4"></div>
+			<div class="box" id="box-5"></div>
+			<div class="box" id="box-6"></div>
+			<div class="box" id="box-7"></div>
+			<div class="box" id="box-8"></div>
+			<div class="box" id="box-9"></div>
+		</div>
+
+		<!-- Radio buttons to select the value of X -->
+		<div class="radio-container">
+			<label for="x10">X = 10</label>
+			<input type="radio" id="x10" name="x-value" value="10" checked>
+			<label for="x12">X = 12</label>
+			<input type="radio" id="x12" name="x-value" value="12">
+		</div>
+
+		<!-- Buttons organized in a grid layout with custom colors (inverted order) -->
+		<div class="grid-container">
+			<button class="btn-x" onclick="sendValue('X')">X</button>
+			<button class="btn-10" onclick="sendValue('10')">10</button>
+			<button class="btn-9" onclick="sendValue('9')">9</button>
+			<button class="btn-8" onclick="sendValue('8')">8</button>
+			<button class="btn-7" onclick="sendValue('7')">7</button>
+			<button class="btn-6" onclick="sendValue('6')">6</button>
+			<button class="btn-5" onclick="sendValue('5')">5</button>
+			<button class="btn-4" onclick="sendValue('4')">4</button>
+			<button class="btn-3" onclick="sendValue('3')">3</button>
+			<button class="btn-2" onclick="sendValue('2')">2</button>
+			<button class="btn-1" onclick="sendValue('1')">1</button>
+			<button class="btn-m" onclick="sendValue('M')">M</button>
+		</div>
+
+		<!-- Reset button -->
+		<div>
+			<button id="reset-button" onclick="reset()">Reset</button>
+		</div>
+	</div>
+
+	<script>
+		let xValue = 10; // Default X value
+
+		// Update X value when the radio button is changed
+		document.querySelectorAll('input[name="x-value"]').forEach((input) => {
+			input.addEventListener('change', function() {
+				xValue = parseInt(this.value);
+			});
+		});
+
+		function sendValue(value) {
+			// Check if the pressed button is X, apply the selected X value
+			if (value === 'X') {
+				value = xValue;
+			}
+
+			$.ajax({
+				type: 'POST',
+				url: '/button_click',
+				contentType: 'application/json',
+				data: JSON.stringify({ value: value }),
+				success: function (response) {
+					// Update the total with the new value from Flask
+					$('#total').text(response.total);
+
+					// Update the boxes with the pressed buttons
+					let pressedButtons = response.pressed_buttons;
+					for (let i = 0; i < 10; i++) {
+						if (pressedButtons[i]) {
+							$('#box-' + i).text(pressedButtons[i]);
+						} else {
+							$('#box-' + i).text('');
+						}
+					}
+				}
+			});
+		}
+
+		function reset() {
+			$.ajax({
+				type: 'POST',
+				url: '/reset',
+				success: function (response) {
+					$('#total').text(response.total);
+					// Clear the boxes
+					for (let i = 0; i < 10; i++) {
+						$('#box-' + i).text('');
+					}
+				}
+			});
+		}
+
+		// Listen for keyboard events and map to button presses
+		document.addEventListener('keydown', function(event) {
+			const key = event.key;  // Get the key pressed
+
+			// Map number keys to their corresponding values
+			if (key === '0') {
+				sendValue('10');  // Map "0" to send '10'
+			} else if (key >= '1' && key <= '9') {
+				sendValue(key);  // Send the number pressed (1-9)
+			} else if (key === 'Enter') {
+				reset();  // Reset when "Enter" key is pressed
+			} else if (key.toUpperCase() === 'M') {
+				sendValue('M');  // Send "M" when "M" is pressed
+			} else if (key.toUpperCase() === 'X') {
+				sendValue('X');  // Send "X" when "X" is pressed
+			}
+		});
+	</script>
+</body>
+</html>
